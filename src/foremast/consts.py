@@ -29,6 +29,8 @@ import ast
 import json
 import logging
 import sys
+import argparse
+
 from configparser import ConfigParser
 from os import getcwd, getenv, path
 from os.path import exists, expanduser, expandvars
@@ -189,10 +191,46 @@ def _generate_security_groups(config_key):
     LOG.debug('Generated security group: %s', entries)
     return entries
 
+def load_spinnaker_api_config():
+    '''Loads API_URL, GATE_CA_BUNDLE, GATE_CLIENT_CERT using the ??? variable set by commandline'''
+    spin_config = dict()
+
+    # Load value from config, if dict then they support --spinnaker argument
+    raw_api_url = validate_key_values(CONFIG, 'base', 'gate_api_url')
+    raw_gate_client_cert = validate_key_values(CONFIG, 'base', 'gate_client_cert', default='')
+    raw_gate_ca_bundle = validate_key_values(CONFIG, 'base', 'gate_ca_bundle', default='')
+
+    if(isinstance(raw_api_url, str) and isinstance(raw_gate_ca_bundle, str) and isinstance(raw_gate_client_cert, str)):
+        # Spin config vars are all strings, use these values and do not check --spinnaker argument
+        spin_config['API_URL'] = raw_api_url
+        spin_config['GATE_CLIENT_CERT'] = expandvars(expanduser(raw_gate_client_cert))
+        spin_config['GATE_CA_BUNDLE'] = expandvars(expanduser(raw_gate_ca_bundle))
+        return spin_config
+
+    if(isinstance(raw_api_url, dict) and isinstance(raw_gate_ca_bundle, dict)
+       and isinstance(raw_gate_client_cert, dict)):
+        # Spin config vars are all dicts, use spinnaker arg to get the correct one
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--spinnaker', default="default", help='Spinnaker config to use')
+        args, _ = parser.parse_known_args()
+
+        try:
+            spin_config['API_URL'] = raw_api_url[args.spinnaker]
+            spin_config['GATE_CLIENT_CERT'] = expandvars(expanduser(raw_gate_client_cert[args.spinnaker]))
+            spin_config['GATE_CA_BUNDLE'] = expandvars(expanduser(raw_gate_ca_bundle[args.spinnaker]))
+            return spin_config
+        except KeyError:
+            LOG.error("Error getting named value '%s' from API_URL, GATE_CLIENT_CERT or GATE_CA_BUNDLE.  "
+             "Is it defined in all three?", args.spinnaker)
+            raise
+
+    # else they have some as str some as dict or a completely invalid type, throw exception
+    # Todo: What exception type to use, also.. can't import from .exceptions (circular reference?)
+    raise Exception(
+        "gate_api_url, gate_client_cert, gate_ca_bundle must be the same type: either str or dict")
 
 CONFIG = find_config()
 
-API_URL = validate_key_values(CONFIG, 'base', 'gate_api_url')
 GIT_URL = validate_key_values(CONFIG, 'base', 'git_url')
 DOMAIN = validate_key_values(CONFIG, 'base', 'domain', default='example.com')
 ENVS = set(validate_key_values(CONFIG, 'base', 'envs', default='').split(','))
@@ -235,9 +273,12 @@ DEFAULT_TASK_TIMEOUT = validate_key_values(CONFIG, 'task_timeouts', 'default', d
 TASK_TIMEOUTS = json.loads(validate_key_values(CONFIG, 'task_timeouts', 'envs', default="{}"))
 ASG_WHITELIST = set(validate_key_values(CONFIG, 'whitelists', 'asg_whitelist', default='').split(','))
 APP_FORMATS = extract_formats(CONFIG)
-GATE_CLIENT_CERT = expandvars(expanduser(validate_key_values(CONFIG, 'base', 'gate_client_cert', default='')))
-GATE_CA_BUNDLE = expandvars(expanduser(validate_key_values(CONFIG, 'base', 'gate_ca_bundle', default='')))
 LINKS = _convert_string_to_native(validate_key_values(CONFIG, 'links', 'default', default='{}'))
+
+SPIN_API_CONFIG = load_spinnaker_api_config()
+API_URL = SPIN_API_CONFIG['API_URL']
+GATE_CLIENT_CERT = SPIN_API_CONFIG['GATE_CLIENT_CERT']
+GATE_CA_BUNDLE = SPIN_API_CONFIG['GATE_CA_BUNDLE']
 
 HEADERS = {
     'accept': '*/*',
