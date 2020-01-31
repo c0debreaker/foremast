@@ -1,8 +1,9 @@
 """AWS Spinnaker Application."""
 from pprint import pformat
 
-from ..app import base
-from ..utils import wait_for_task
+# Use fully qualified import because this is loaded via plugin manager
+from foremast.app import base
+from foremast.utils import wait_for_task
 
 
 class SpinnakerApp(base.BaseApp):

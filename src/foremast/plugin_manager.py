@@ -22,7 +22,6 @@ class PluginManager:
 
         self.paths = all_paths
         self.provider = provider
-
         plugin_base = PluginBase(package='foremast.plugins')
         self.plugin_source = plugin_base.make_plugin_source(searchpath=self.paths, persist=True)
 
