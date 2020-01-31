@@ -32,9 +32,9 @@ import os
 
 import gogoutils
 
-from foremast import (autoscaling_policy, awslambda, configs, consts, datapipeline, dns, elb, iam, pipeline, s3,
+from . import (autoscaling_policy, awslambda, configs, consts, datapipeline, dns, elb, iam, pipeline, s3,
                       scheduled_actions, securitygroup, slacknotify, utils)
-from foremast.plugin_manager import PluginManager
+from .plugin_manager import PluginManager
 
 from .args import add_debug
 

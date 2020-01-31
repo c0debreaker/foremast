@@ -25,7 +25,6 @@ from .construct_pipeline_block_cloudfunction import construct_pipeline_block_clo
 from .create_pipeline import SpinnakerPipeline
 from .renumerate_stages import renumerate_stages
 
-
 class SpinnakerPipelineCloudFunction(SpinnakerPipeline):
     """Manipulate Spinnaker Pipelines.
 

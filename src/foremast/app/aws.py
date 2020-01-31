@@ -1,8 +1,8 @@
 """AWS Spinnaker Application."""
 from pprint import pformat
 
-from foremast.app import base
-from foremast.utils import wait_for_task
+from ..app import base
+from ..utils import wait_for_task
 
 
 class SpinnakerApp(base.BaseApp):
